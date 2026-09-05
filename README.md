@@ -25,7 +25,7 @@ This repo intentionally does not include:
 
 - Apple Macintosh ROM files.
 - Mac OS/System disk images.
-- Prince of Persia or any other commercial game data.
+- Commercial game data.
 - Disk images such as `.dsk`, `.hfv`, `.hfs`, or `.iso`.
 - Prebuilt private launcher executables.
 - Game-derived icons or artwork.
