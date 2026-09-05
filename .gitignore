@@ -4,6 +4,7 @@
 /minivmac/minivmac.exe
 /minivmac/minivmac-windows-friendly.exe
 /minivmac/minivmac-plus.exe
+/minivmac/minivmac-dx.exe
 /minivmac/tool.exe
 *.exe
 *.dll

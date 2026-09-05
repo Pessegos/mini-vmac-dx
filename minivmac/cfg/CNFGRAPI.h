@@ -78,8 +78,8 @@
 #define NeedIntlChars 0
 #define ItnlKyBdFix 1
 #define kStrAppName "Mini vMac"
-#define kCustomWindowTitle "Mini vMac Plus"
-#define kAppVariationStr "minivmac-plus-0.1"
+#define kCustomWindowTitle "Mini vMac DX"
+#define kAppVariationStr "minivmac-dx-0.1"
 #define kStrCopyrightYear "2018"
 #define kMaintainerName "unknown"
 #define kStrHomePage "https://www.gryphel.com/c/minivmac/"

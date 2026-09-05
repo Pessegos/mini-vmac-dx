@@ -1,4 +1,4 @@
-# Mini vMac Plus
+# Mini vMac DX
 
 An unofficial quality-of-life fork of Mini vMac for modern Windows.
 
@@ -52,7 +52,7 @@ If your MSYS2 install provides `mingw32-make`, that also works.
 The output is:
 
 ```text
-minivmac-plus.exe
+minivmac-dx.exe
 ```
 
 To run it, place a compatible `MacII.ROM` beside the executable, then insert or

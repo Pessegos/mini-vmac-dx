@@ -1,7 +1,7 @@
 CC ?= gcc
 WINDRES ?= windres
 
-TARGET = minivmac-plus.exe
+TARGET = minivmac-dx.exe
 OBJDIR = bld
 
 CFLAGS_COMMON = -Wall -Wmissing-prototypes -Wno-uninitialized -Wundef -Wstrict-prototypes -Icfg -Isrc
