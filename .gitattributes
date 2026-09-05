@@ -1,0 +1,12 @@
+* text=auto
+
+*.c text
+*.h text
+*.i text
+*.m text
+*.r text
+*.rc text
+*.manifest text
+*.md text
+*.txt text
+Makefile text eol=lf

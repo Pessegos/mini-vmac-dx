@@ -1,0 +1,47 @@
+# Build outputs
+/minivmac/bld/
+/minivmac/build-src/
+/minivmac/minivmac.exe
+/minivmac/minivmac-windows-friendly.exe
+/minivmac/tool.exe
+*.exe
+*.dll
+*.o
+*.obj
+*.res
+*.a
+
+# Private ROMs and disk images
+*.rom
+*.ROM
+*.dsk
+*.DSK
+*.hfv
+*.HFV
+*.hfs
+*.HFS
+*.iso
+*.ISO
+*.img
+*.IMG
+embed-*
+
+# Archives and temporary packages
+*.zip
+*.7z
+*.rar
+*.tar
+*.gz
+
+# Game/manual/code assets
+Codes*.jpg
+Codes*.png
+*.ico
+*.icns
+
+# Local editor/system noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
