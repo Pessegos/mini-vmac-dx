@@ -11,6 +11,8 @@ software.
 - Direct3D 9Ex renderer for smoother fullscreen presentation on modern Windows.
 - Direct3D 9 fallback, with the original GDI path still available as a last resort.
 - Crisp point/nearest scaling for pixel art.
+- Arbitrary window and monitor fit scaling without relying on Mini vMac's old
+  fixed magnify/32-pixel sizing behavior.
 - Full-monitor fullscreen toggled with Alt+Enter.
 - View menu and right-click fullscreen controls.
 - Resizable window with aspect-aware fit rendering.
