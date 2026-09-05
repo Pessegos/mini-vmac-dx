@@ -3,6 +3,7 @@
 /minivmac/build-src/
 /minivmac/minivmac.exe
 /minivmac/minivmac-windows-friendly.exe
+/minivmac/minivmac-plus.exe
 /minivmac/tool.exe
 *.exe
 *.dll
@@ -44,4 +45,3 @@ Codes*.png
 Thumbs.db
 .vscode/
 .idea/
-

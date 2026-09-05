@@ -1,6 +1,6 @@
-# Mini vMac Windows Friendly
+# Mini vMac Plus
 
-An unofficial Windows-oriented custom build of Mini vMac.
+An unofficial quality-of-life fork of Mini vMac for modern Windows.
 
 This repository contains source code only. It does not include Macintosh ROMs,
 Mac OS disk images, games, save disks, or prebuilt executables with embedded
@@ -52,7 +52,7 @@ If your MSYS2 install provides `mingw32-make`, that also works.
 The output is:
 
 ```text
-minivmac-windows-friendly.exe
+minivmac-plus.exe
 ```
 
 To run it, place a compatible `MacII.ROM` beside the executable, then insert or
