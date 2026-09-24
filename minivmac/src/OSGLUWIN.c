@@ -4019,6 +4019,33 @@ LOCALFUNC blnr ReCreateMainWindow(void)
 		ApplySavedWindowPlacementForCreate(&NewWinR, &MyWStyle);
 #endif
 #endif
+		if (OldMainWindow == NULL) {
+			HWND ExistingWindow = FindWindow(WndClassName, NULL);
+
+			if (ExistingWindow != NULL) {
+				RECT ExistingR;
+				MONITORINFO MonitorInfo;
+				int WindowWidth = NewWinR.right - NewWinR.left;
+				int WindowHeight = NewWinR.bottom - NewWinR.top;
+
+				MonitorInfo.cbSize = sizeof(MonitorInfo);
+				if (GetWindowRect(ExistingWindow, &ExistingR)
+					&& GetMonitorInfo(MonitorFromWindow(ExistingWindow,
+						MONITOR_DEFAULTTONEAREST), &MonitorInfo))
+				{
+					NewWinR.left = ExistingR.left + 32;
+					NewWinR.top = ExistingR.top + 32;
+					if (NewWinR.left + WindowWidth > MonitorInfo.rcWork.right) {
+						NewWinR.left = MonitorInfo.rcWork.left + 32;
+					}
+					if (NewWinR.top + WindowHeight > MonitorInfo.rcWork.bottom) {
+						NewWinR.top = MonitorInfo.rcWork.top + 32;
+					}
+					NewWinR.right = NewWinR.left + WindowWidth;
+					NewWinR.bottom = NewWinR.top + WindowHeight;
+				}
+			}
+		}
 	}
 #endif
 
@@ -4222,6 +4249,8 @@ LOCALFUNC blnr ReCreateMainWindow(void)
 
 	if (NewMainWindow != OldMainWindow) {
 		ShowWindow(NewMainWindow, SW_SHOW /* CmdShow */);
+		(void) BringWindowToTop(NewMainWindow);
+		(void) SetForegroundWindow(NewMainWindow);
 		if (OldMainWndDC != NULL) {
 			ReleaseDC(MainWnd, OldMainWndDC);
 		}
@@ -5921,26 +5950,14 @@ LOCALFUNC blnr AppendNativePathChild(LPTSTR pathName, LPTSTR Child)
 LOCALFUNC blnr EmbeddedFileExistsWithSize(LPTSTR pathName,
 	DWORD WantedSize)
 {
-	blnr IsOk = falseblnr;
-	HANDLE refnum = CreateFile(
-		pathName,
-		GENERIC_READ,
-		FILE_SHARE_READ | FILE_SHARE_WRITE,
-		NULL,
-		OPEN_EXISTING,
-		FILE_ATTRIBUTE_NORMAL,
-		NULL
-	);
+	WIN32_FILE_ATTRIBUTE_DATA data;
 
-	if (refnum != INVALID_HANDLE_VALUE) {
-		DWORD HighSize = 0;
-		DWORD LowSize = GetFileSize(refnum, &HighSize);
-
-		IsOk = (LowSize == WantedSize) && (HighSize == 0);
-		(void) CloseHandle(refnum);
+	if (! GetFileAttributesEx(pathName, GetFileExInfoStandard, &data)) {
+		return falseblnr;
 	}
-
-	return IsOk;
+	return (0 == (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+		&& (data.nFileSizeLow == WantedSize)
+		&& (data.nFileSizeHigh == 0);
 }
 
 LOCALFUNC blnr GetEmbeddedDataPath(LPTSTR pathName, LPTSTR FileName)
@@ -6050,14 +6067,72 @@ LOCALFUNC blnr LoadEmbeddedMacRom(void)
 	return (mnvm_noErr == ROM_IsValid());
 }
 
+LOCALFUNC blnr LoadTemporaryEmbeddedDiskImage(int ResourceId,
+	LPTSTR PrimaryPath)
+{
+	TCHAR TempPath[_MAX_PATH];
+	HRSRC Resource;
+	HGLOBAL ResourceData;
+	LPVOID p;
+	DWORD ResourceSize;
+	DWORD BytesWritten = 0;
+	HANDLE refnum;
+
+	if (_tcslen(PrimaryPath) + 32 >= _MAX_PATH) {
+		return falseblnr;
+	}
+	_tcscpy(TempPath, PrimaryPath);
+	wsprintf(TempPath + _tcslen(TempPath),
+		TEXT(".instance-%lu.tmp"), (unsigned long)GetCurrentProcessId());
+
+	Resource = FindResource(AppInstance,
+		MAKEINTRESOURCE(ResourceId), RT_RCDATA);
+	if (Resource == NULL) {
+		return falseblnr;
+	}
+	ResourceSize = SizeofResource(AppInstance, Resource);
+	ResourceData = LoadResource(AppInstance, Resource);
+	if (ResourceData == NULL) {
+		return falseblnr;
+	}
+	p = LockResource(ResourceData);
+	if (p == NULL) {
+		return falseblnr;
+	}
+
+	refnum = CreateFile(TempPath, GENERIC_READ | GENERIC_WRITE, 0,
+		NULL, CREATE_ALWAYS,
+		FILE_ATTRIBUTE_TEMPORARY | FILE_FLAG_DELETE_ON_CLOSE, NULL);
+	if (refnum == INVALID_HANDLE_VALUE) {
+		return falseblnr;
+	}
+	if ((! WriteFile(refnum, p, ResourceSize, &BytesWritten, NULL))
+		|| (BytesWritten != ResourceSize))
+	{
+		(void) CloseHandle(refnum);
+		return falseblnr;
+	}
+	(void) FlushFileBuffers(refnum);
+	(void) SetFilePointer(refnum, 0, NULL, FILE_BEGIN);
+	return Sony_Insert0(refnum, falseblnr, TempPath);
+}
+
 LOCALFUNC blnr LoadEmbeddedDiskImage(int ResourceId, LPTSTR FileName)
 {
 	TCHAR ImageFile[_MAX_PATH];
 
-	if (EnsureEmbeddedResourceFile(ResourceId, FileName, ImageFile))
-	if (Sony_Insert1(ImageFile, falseblnr))
-	{
-		return trueblnr;
+	if (EnsureEmbeddedResourceFile(ResourceId, FileName, ImageFile)) {
+		HANDLE refnum = CreateFile(ImageFile,
+			GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING,
+			FILE_ATTRIBUTE_NORMAL, NULL);
+
+		if (refnum != INVALID_HANDLE_VALUE) {
+			return Sony_Insert0(refnum, falseblnr, ImageFile);
+		}
+		if (ERROR_SHARING_VIOLATION == GetLastError()) {
+			return LoadTemporaryEmbeddedDiskImage(ResourceId, ImageFile);
+		}
+		return Sony_Insert1(ImageFile, falseblnr);
 	}
 	return falseblnr;
 }

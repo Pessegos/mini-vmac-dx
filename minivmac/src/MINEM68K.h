@@ -35,6 +35,10 @@ EXPORTPROC SetCyclesRemaining(si5r n);
 
 EXPORTPROC m68k_go_nCycles(ui5b n);
 
+#if EnableMDRVHiFiAudio
+EXPORTFUNC blnr MDRVHiFi_GetSample(ui4r *sample);
+#endif
+
 /*
 	general purpose access of address space
 	of emulated computer. (memory and

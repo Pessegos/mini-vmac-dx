@@ -9,6 +9,14 @@ CFLAGS = -O2 $(CFLAGS_COMMON)
 LDFLAGS = -mwindows
 LDLIBS = -ld3d9 -lwinmm -lole32 -luuid
 
+ifeq ($(MDRV_HIFI),1)
+CFLAGS += -DEnableMDRVHiFiAudio=1 -DkLn2SoundSampSz=4
+endif
+
+ifeq ($(ASC_STARTUP_MUTE),1)
+CFLAGS += -DEnableASCStartupMute=1
+endif
+
 OBJS = \
 	$(OBJDIR)/MINEM68K.o \
 	$(OBJDIR)/OSGLUWIN.o \

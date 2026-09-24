@@ -3,8 +3,8 @@
 1                       24      "app.manifest"
 
 1 VERSIONINFO
-FILEVERSION 0,1,0,0
-PRODUCTVERSION 0,1,0,0
+FILEVERSION 0,2,0,0
+PRODUCTVERSION 0,2,0,0
 FILEOS 0x00040004L
 FILETYPE 0x00000001L
 BEGIN
@@ -14,11 +14,11 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Unofficial Mini vMac custom build\0"
             VALUE "FileDescription", "Mini vMac DX\0"
-            VALUE "FileVersion", "0.1.0.0\0"
+            VALUE "FileVersion", "0.2.0.0\0"
             VALUE "InternalName", "MiniVmacDX\0"
             VALUE "OriginalFilename", "minivmac-dx.exe\0"
             VALUE "ProductName", "Mini vMac DX\0"
-            VALUE "ProductVersion", "0.1.0.0\0"
+            VALUE "ProductVersion", "0.2.0.0\0"
             VALUE "Comments", "Custom Windows-oriented Mini vMac build. Does not include ROM or disk images.\0"
         END
     END

@@ -24,6 +24,9 @@
 #include "MYOSGLUE.h"
 #include "EMCONFIG.h"
 #include "GLOBGLUE.h"
+#if EnableMDRVHiFiAudio
+#include "MINEM68K.h"
+#endif
 #include "VIAEMDEV.h"
 #endif
 
@@ -41,7 +44,28 @@ LOCALVAR ui3r SoundReg805 = 0;
 LOCALVAR ui3r SoundReg_Volume = 0; /* 0x806 */
 /* LOCALVAR ui3r SoundReg807 = 0; */
 
+#if EnableASCStartupMute
+LOCALVAR blnr ASC_StartupMute = trueblnr;
+LOCALVAR blnr ASC_StartupSawWavetable = falseblnr;
+#endif
+
 LOCALVAR ui3b ASC_SampBuff[0x800];
+#if EnableMDRVHiFiAudio
+LOCALVAR ui4b ASC_HiFiSampBuff[0x800];
+LOCALVAR ui5b ASC_MDRVSequenceSamples = 0;
+
+LOCALFUNC ui4r ASC_MakeHiFiSample(ui5r data, blnr *wasReconstructed)
+{
+	ui4r sample;
+	blnr reconstructed = MDRVHiFi_GetSample(&sample);
+
+	if (! reconstructed) {
+		sample = (ui4r)((data & 0xFF) << 8);
+	}
+	*wasReconstructed = reconstructed;
+	return sample;
+}
+#endif
 
 struct ASC_ChanR {
 	ui3b freq[4];
@@ -96,6 +120,9 @@ LOCALPROC ASC_ClearFIFO(void)
 	ASC_FIFO_InA = 0;
 	ASC_FIFO_InB = 0;
 	ASC_Playing = falseblnr;
+#if EnableMDRVHiFiAudio
+	ASC_MDRVSequenceSamples = 0;
+#endif
 	ASC_RecalcStatus();
 }
 
@@ -115,7 +142,31 @@ GLOBALFUNC ui5b ASC_Access(ui5b Data, blnr WriteMem, CPTR addr)
 					} else {
 
 					ASC_SampBuff[ASC_FIFO_InA & 0x3FF] = Data;
+#if EnableMDRVHiFiAudio
+					{
+						blnr reconstructed;
+						ui4r hifiSample = ASC_MakeHiFiSample(Data,
+							&reconstructed);
 
+						if (reconstructed) {
+							if ((ASC_MDRVSequenceSamples != 0)
+								&& ((ASC_MDRVSequenceSamples % 370) == 0)
+								&& (((ui4b)(ASC_FIFO_InA - ASC_FIFO_Out)) >= 2))
+							{
+								ui4r previous = (ASC_FIFO_InA - 1) & 0x3FF;
+								ui4r beforePrevious = (ASC_FIFO_InA - 2) & 0x3FF;
+
+								ASC_HiFiSampBuff[previous] = (ui4r)(
+									(ASC_HiFiSampBuff[beforePrevious]
+										+ hifiSample + 1) >> 1);
+							}
+							++ASC_MDRVSequenceSamples;
+						} else {
+							ASC_MDRVSequenceSamples = 0;
+						}
+						ASC_HiFiSampBuff[ASC_FIFO_InA & 0x3FF] = hifiSample;
+					}
+#endif
 					++ASC_FIFO_InA;
 					if (((ui4b)(ASC_FIFO_InA - ASC_FIFO_Out)) >= 0x200)
 					{
@@ -156,7 +207,13 @@ GLOBALFUNC ui5b ASC_Access(ui5b Data, blnr WriteMem, CPTR addr)
 					} else {
 
 					ASC_SampBuff[0x400 + (ASC_FIFO_InB & 0x3FF)] = Data;
-
+#if EnableMDRVHiFiAudio
+					{
+						blnr reconstructed;
+						ASC_HiFiSampBuff[0x400 + (ASC_FIFO_InB & 0x3FF)]
+							= ASC_MakeHiFiSample(Data, &reconstructed);
+					}
+#endif
 					++ASC_FIFO_InB;
 					if (((ui4b)(ASC_FIFO_InB - ASC_FIFO_Out)) >= 0x200)
 					{
@@ -192,6 +249,9 @@ GLOBALFUNC ui5b ASC_Access(ui5b Data, blnr WriteMem, CPTR addr)
 #endif
 			} else {
 				ASC_SampBuff[addr] = Data;
+#if EnableMDRVHiFiAudio
+				ASC_HiFiSampBuff[addr] = (ui4r)((Data & 0xFF) << 8);
+#endif
 			}
 		} else {
 			Data = ASC_SampBuff[addr];
@@ -548,6 +608,16 @@ GLOBALPROC ASC_SubTick(int SubTick)
 	ui3b SoundVolume = SoundReg_Volume;
 #endif
 
+#if EnableASCStartupMute
+	if (ASC_StartupMute) {
+		if (2 == SoundReg801) {
+			ASC_StartupSawWavetable = trueblnr;
+		} else if (ASC_StartupSawWavetable || (1 == SoundReg801)) {
+			ASC_StartupMute = falseblnr;
+		}
+	}
+#endif
+
 #if MySoundEnabled
 label_retry:
 	p = MySound_BeginWrite(n, &actL);
@@ -558,7 +628,9 @@ label_retry:
 
 		if (1 == SoundReg801) {
 #if MySoundEnabled
+#if ! EnableMDRVHiFiAudio || ASC_dolog
 			ui3p addr;
+#endif
 #endif
 
 			if (0 != (SoundReg802 & 2)) {
@@ -600,13 +672,15 @@ label_retry:
 				}
 				if (! ASC_Playing) {
 #if MySoundEnabled
-					*p++ = 0x80;
+					*p++ = kCenterSound;
 #endif
 				} else
 				{
 
 #if MySoundEnabled
+#if ! EnableMDRVHiFiAudio || ASC_dolog
 				addr = ASC_SampBuff + (ASC_FIFO_Out & 0x3FF);
+#endif
 
 #if ASC_dolog && 1
 				dbglog_StartLine();
@@ -621,11 +695,18 @@ label_retry:
 				dbglog_writeReturn();
 #endif
 
+#if EnableMDRVHiFiAudio
+				*p++ = (trSoundSamp)(((ui5r)
+					ASC_HiFiSampBuff[ASC_FIFO_Out & 0x3FF]
+					+ ASC_HiFiSampBuff[0x400 + (ASC_FIFO_Out & 0x3FF)])
+					>> 1);
+#else
 				*p++ = ((addr[0] + addr[0x400])
 #if 4 == kLn2SoundSampSz
 					<< 8
 #endif
 					) >> 1;
+#endif
 #endif /* MySoundEnabled */
 
 				ASC_FIFO_Out += 1;
@@ -654,13 +735,15 @@ label_retry:
 				}
 				if (! ASC_Playing) {
 #if MySoundEnabled
-					*p++ = 0x80;
+					*p++ = kCenterSound;
 #endif
 				} else
 				{
 
 #if MySoundEnabled
+#if ! EnableMDRVHiFiAudio || ASC_dolog
 				addr = ASC_SampBuff + (ASC_FIFO_Out & 0x3FF);
+#endif
 
 #if ASC_dolog && 1
 				dbglog_StartLine();
@@ -675,11 +758,15 @@ label_retry:
 				dbglog_writeReturn();
 #endif
 
+#if EnableMDRVHiFiAudio
+				*p++ = ASC_HiFiSampBuff[ASC_FIFO_Out & 0x3FF];
+#else
 				*p++ = (addr[0])
 #if 4 == kLn2SoundSampSz
 					<< 8
 #endif
 					;
+#endif
 #endif /* MySoundEnabled */
 
 				/* Move the address on */
@@ -759,7 +846,11 @@ label_retry:
 				dbglog_writeReturn();
 #endif
 
-				*p++ = (v >> 2);
+				*p++ = (v >> 2)
+#if 4 == kLn2SoundSampSz
+					<< 8
+#endif
+					;
 #endif /* MySoundEnabled */
 			}
 
@@ -775,8 +866,16 @@ label_retry:
 #endif
 		}
 
-
 #if MySoundEnabled
+#if EnableASCStartupMute
+		if (ASC_StartupMute && (2 == SoundReg801)) {
+			p -= actL;
+			for (i = 0; i < actL; ++i) {
+				*p++ = kCenterSound;
+			}
+		}
+#endif
+
 		if (SoundVolume < 7) {
 			/*
 				Usually have volume at 7, so this

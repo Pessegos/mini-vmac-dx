@@ -19,6 +19,11 @@ software.
 - Window maximize behaves like a normal Windows app.
 - Alt+Tab and Windows hotkeys are friendlier in fullscreen.
 - Windowed mouse behavior uses click-to-capture so resizing and menus stay usable.
+- New emulator windows are brought forward and offset when another instance is
+  already open.
+- Embedded-disk builds can run multiple instances safely: the first instance
+  uses the persistent disk, while additional instances receive private temporary
+  copies that Windows deletes on exit.
 - DPI-aware Windows manifest.
 
 ## What Is Not Included
@@ -60,6 +65,27 @@ minivmac-dx.exe
 To run it, place a compatible `MacII.ROM` beside the executable, then insert or
 drag your own disk images into the emulator.
 
+## Optional Audio Compatibility
+
+The default build keeps Mini vMac's normal audio behavior. Two opt-in switches
+preserve the compatibility work used by a private Prince of Persia 2 setup
+without including any game data:
+
+```sh
+make MDRV_HIFI=1 ASC_STARTUP_MUTE=1
+```
+
+- `MDRV_HIFI=1` enables 16-bit reconstruction for the MIDI Synth 3.45 driver
+  when its exact code signature is detected. It also repairs the driver's
+  370-sample block boundary discontinuity. Other ASC audio falls back to the
+  standard sample path.
+- `ASC_STARTUP_MUTE=1` suppresses only the short ASC wavetable initialization
+  sound at startup.
+
+These are specialized compatibility options and are disabled by default. The
+audio correction performs no WAV capture, tracing, denoising, or other
+post-processing.
+
 ## Private Embedded Builds
 
 The public build disables embedded ROM/disk resources by default:
@@ -67,6 +93,10 @@ The public build disables embedded ROM/disk resources by default:
 ```c
 #define EnableEmbeddedResources 0
 ```
+
+When embedded resources are enabled in a private build, simultaneous processes
+never write to the same extracted disk. Changes made in a secondary instance
+are intentionally temporary.
 
 Do not publish builds that contain ROMs, operating system images, commercial game
 disk images, saves, manuals, codes, or game-derived artwork unless you have the

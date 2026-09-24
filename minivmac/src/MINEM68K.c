@@ -807,6 +807,10 @@ LOCALINLINEPROC UnDecodeNextInstruction(ui4rr Cycles)
 #endif
 }
 
+#if EnableMDRVHiFiAudio
+LOCALVAR CPTR MDRVHiFiCurrentPC = 0;
+#endif
+
 LOCALPROC m68k_go_MaxCycles(void)
 {
 	ui4rr Cycles;
@@ -840,6 +844,10 @@ LOCALPROC m68k_go_MaxCycles(void)
 			}
 #endif
 		}
+#endif
+
+#if EnableMDRVHiFiAudio
+		MDRVHiFiCurrentPC = m68k_getpc() - 2;
 #endif
 
 		d();
@@ -944,6 +952,69 @@ LOCALFUNC ui5r my_reg_call get_long(CPTR addr)
 }
 #else
 #define get_long get_long_misaligned
+#endif
+
+#if EnableMDRVHiFiAudio
+LOCALFUNC blnr MDRVHiFiEntryAt(CPTR base)
+{
+	return ((get_word(base + 0x00) & 0xFFFF) == 0x202F)
+		&& ((get_word(base + 0x02) & 0xFFFF) == 0x0004)
+		&& ((get_word(base + 0x04) & 0xFFFF) == 0x222F)
+		&& ((get_word(base + 0x06) & 0xFFFF) == 0x0008)
+		&& ((get_word(base + 0x08) & 0xFFFF) == 0x48E7)
+		&& ((get_word(base + 0x0A) & 0xFFFF) == 0x3FFE)
+		&& ((get_word(base + 0x0C) & 0xFFFF) == 0x49FA)
+		&& ((get_word(base + 0x0E) & 0xFFFF) == 0x45F2);
+}
+
+GLOBALFUNC blnr MDRVHiFi_GetSample(ui4r *sample)
+{
+	CPTR pc = MDRVHiFiCurrentPC;
+	CPTR globals = m68k_areg(4);
+	CPTR codeBase;
+	ui5r op0;
+	ui5r op1;
+	ui5r voices;
+	ui5r effects;
+	ui5r norm;
+	si5r centered;
+	si5r value;
+
+	if ((nullpr == sample) || (globals < 0x4600)) {
+		return falseblnr;
+	}
+	codeBase = globals - 0x4600;
+	if (! MDRVHiFiEntryAt(codeBase)) {
+		return falseblnr;
+	}
+	if ((pc < codeBase + 0x09C8) || (pc > codeBase + 0x16C0)) {
+		return falseblnr;
+	}
+
+	op0 = get_word(pc) & 0xFFFF;
+	op1 = get_word(pc + 2) & 0xFFFF;
+	if (! (((0x16B2 == op0) || (0x1772 == op0)) && (0x1000 == op1))) {
+		return falseblnr;
+	}
+
+	voices = get_word(globals + 0x13D6) & 0xFFFF;
+	norm = get_word(globals + 0x13D8) & 0xFFFF;
+	effects = get_word(globals + 0x13DA) & 0xFFFF;
+	if ((0 == norm) || (voices > 32) || (effects > 32)) {
+		return falseblnr;
+	}
+
+	centered = (si5r)(m68k_dreg(1) & 0xFFFF)
+		- (si5r)((voices + effects + effects) * 128);
+	value = 0x8000 + (centered * 256) / (si5r)norm;
+	if (value < 0) {
+		value = 0;
+	} else if (value > 0xFFFF) {
+		value = 0xFFFF;
+	}
+	*sample = (ui4r)value;
+	return trueblnr;
+}
 #endif
 
 FORWARDPROC my_reg_call put_long_misaligned_ext(CPTR addr, ui5r l);

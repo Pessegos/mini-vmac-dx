@@ -73,7 +73,21 @@ typedef unsigned long long ui6b;
 #define MySoundEnabled 1
 
 #define MySoundRecenterSilence 0
+#ifndef kLn2SoundSampSz
 #define kLn2SoundSampSz 3
+#endif
+
+#ifndef EnableASCStartupMute
+#define EnableASCStartupMute 0
+#endif
+
+#ifndef EnableMDRVHiFiAudio
+#define EnableMDRVHiFiAudio 0
+#endif
+
+#if EnableMDRVHiFiAudio && (4 != kLn2SoundSampSz)
+#error "MDRV Hi-Fi audio requires 16-bit host samples"
+#endif
 
 #define dbglog_HAVE 0
 #define WantAbnormalReports 1
