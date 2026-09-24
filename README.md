@@ -82,9 +82,7 @@ make MDRV_HIFI=1 ASC_STARTUP_MUTE=1
 - `ASC_STARTUP_MUTE=1` suppresses only the short ASC wavetable initialization
   sound at startup.
 
-These are specialized compatibility options and are disabled by default. The
-audio correction performs no WAV capture, tracing, denoising, or other
-post-processing.
+These are specialized compatibility options and are disabled by default.
 
 ## Private Embedded Builds
 
