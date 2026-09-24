@@ -68,8 +68,8 @@ drag your own disk images into the emulator.
 ## Optional Audio Compatibility
 
 The default build keeps Mini vMac's normal audio behavior. Two opt-in switches
-preserve the compatibility work used by a private Prince of Persia 2 setup
-without including any game data:
+provide compatibility improvements for software using the MIDI Synth 3.45
+driver:
 
 ```sh
 make MDRV_HIFI=1 ASC_STARTUP_MUTE=1
@@ -107,7 +107,6 @@ rights to distribute them.
 Mini vMac is distributed under GNU GPL v2. See [LICENSE](LICENSE) and
 [minivmac/COPYING.txt](minivmac/COPYING.txt).
 
-This is an unofficial custom build and is not affiliated with Gryphel, Apple,
-Broderbund, Ubisoft, or Jordan Mechner.
+Mini vMac DX is an independent, unofficial fork.
 
 Mini vMac upstream: https://www.gryphel.com/c/minivmac/
